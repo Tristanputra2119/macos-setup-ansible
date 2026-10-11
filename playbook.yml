@@ -5,10 +5,12 @@
   connection: local
   gather_facts: false
   vars:
+    brew_prefix: /opt/homebrew
     taps:
       - supabase/tap
     formulae:
       - aria2
+      - batt
       - btop
       - cmatrix
       - cocoapods
@@ -44,7 +46,6 @@
     casks:
       - android-platform-tools
       - android-studio
-      - battery
       - copilot-cli
       - dbeaver-community
       - docker-desktop
@@ -126,3 +127,10 @@
         dest: "{{ ansible_env.HOME }}/.config/"
         mode: preserve
         backup: true
+
+    # batt (charlie0129) butuh daemon sistem agar bisa mengatur batas charge
+    - name: Pasang daemon batt
+      ansible.builtin.command: "{{ brew_prefix }}/bin/batt install"
+      args:
+        creates: /Library/LaunchDaemons/cc.chlc.batt.plist
+      become: true

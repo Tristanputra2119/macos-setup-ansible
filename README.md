@@ -6,7 +6,7 @@ Playbook Ansible untuk mereplikasi setup macOS (Apple Silicon): paket Homebrew, 
 
 | Bagian | Detail |
 |---|---|
-| Homebrew | 1 tap, 34 formula (CLI, database, tools dev), 31 cask (aplikasi dan font) |
+| Homebrew | 1 tap, 35 formula (CLI, database, tools dev), 30 cask (aplikasi dan font) |
 | Shell | Oh My Zsh, tema Powerlevel10k, plugin `zsh-autosuggestions` dan `zsh-syntax-highlighting` |
 | Dotfiles | `.zshrc`, `.zprofile`, `.p10k.zsh` |
 | `~/.config` | Ghostty, Karabiner, LinearMouse, Zed (settings + keymap), btop, git ignore |
@@ -53,6 +53,7 @@ Edit `vars` di `playbook.yml`: hapus baris di `formulae` atau `casks` untuk mele
 
 ## Catatan setelah setup
 
+- Batas charge baterai: `batt limit 80` (tanpa sudo setelah daemon terpasang), cek dengan `batt status`.
 - Karabiner dan LinearMouse butuh izin Accessibility dan Input Monitoring. Setujui manual di System Settings.
 - `.zshrc` memuat PATH ke tool yang tidak dipasang playbook (misalnya `~/.opencode/bin`). Entri itu tidak berbahaya, hanya menunjuk ke folder yang belum ada.
 - Daftar paket adalah snapshot per 11 Okt 2026. Perbarui `playbook.yml` kalau paket berubah.
