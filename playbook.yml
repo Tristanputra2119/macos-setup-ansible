@@ -1,0 +1,128 @@
+# Replikasi setup Mac ini ke Mac lain. Jalankan DI Mac target:
+#   ansible-playbook -K playbook.yml
+- name: Setup macOS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    taps:
+      - supabase/tap
+    formulae:
+      - aria2
+      - btop
+      - cmatrix
+      - cocoapods
+      - composer
+      - fzf
+      - gh
+      - git
+      - glab
+      - grep
+      - httpd
+      - kafka
+      - m1ddc
+      - mkcert
+      - mysql
+      - nginx
+      - nss
+      - openjdk@21
+      - phpmyadmin
+      - playwright-cli
+      - pnpm
+      - postgresql@18
+      - rclone
+      - redis
+      - ripgrep
+      - rtk
+      - scrcpy
+      - screenfetch
+      - smartmontools
+      - supabase/tap/supabase
+      - uv
+      - vercel
+      - yt-dlp
+    casks:
+      - android-platform-tools
+      - android-studio
+      - battery
+      - copilot-cli
+      - dbeaver-community
+      - docker-desktop
+      - figma
+      - flutter
+      - font-cascadia-code
+      - font-fira-code
+      - font-geist-mono
+      - font-hack-nerd-font
+      - font-jetbrains-mono
+      - font-livvic
+      - font-meslo-lg-nerd-font
+      - ghostty
+      - google-chrome
+      - iina
+      - karabiner-elements
+      - keka
+      - keyboardcleantool
+      - linearmouse
+      - maccy
+      - obs
+      - pearcleaner
+      - rectangle
+      - tailscale-app # sudah termasuk CLI; formula `tailscale` sengaja tidak dipasang (bentrok)
+      - visual-studio-code
+      - zed
+      - zoom
+      - zotero
+  tasks:
+    - name: Tap Homebrew
+      community.general.homebrew_tap:
+        name: "{{ taps }}"
+
+    - name: Pasang formula
+      community.general.homebrew:
+        name: "{{ formulae }}"
+        state: present
+
+    - name: Pasang cask
+      community.general.homebrew_cask:
+        name: "{{ casks }}"
+        state: present
+        accept_external_apps: true # lewati app yang sudah ada di /Applications
+
+    # --- Dotfiles & shell (zsh + Oh My Zsh + Powerlevel10k) ---
+    - name: Clone Oh My Zsh # noqa: latest[git]
+      ansible.builtin.git:
+        repo: https://github.com/ohmyzsh/ohmyzsh.git
+        dest: "{{ ansible_env.HOME }}/.oh-my-zsh"
+        depth: 1
+        update: false # clone sekali; tidak ditarik ulang saat playbook dijalankan lagi
+
+    - name: Clone tema dan plugin zsh # noqa: latest[git]
+      ansible.builtin.git:
+        repo: "{{ item.repo }}"
+        dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/{{ item.dest }}"
+        depth: 1
+        update: false # clone sekali; tidak ditarik ulang saat playbook dijalankan lagi
+      loop:
+        - { repo: "https://github.com/romkatv/powerlevel10k.git", dest: "themes/powerlevel10k" }
+        - { repo: "https://github.com/zsh-users/zsh-autosuggestions", dest: "plugins/zsh-autosuggestions" }
+        - { repo: "https://github.com/zsh-users/zsh-syntax-highlighting.git", dest: "plugins/zsh-syntax-highlighting" }
+
+    - name: Salin dotfiles (file lama di-backup)
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ ansible_env.HOME }}/{{ item.dest }}"
+        mode: "0644"
+        backup: true
+      loop:
+        - { src: zshrc, dest: .zshrc }
+        - { src: p10k.zsh, dest: .p10k.zsh }
+        - { src: zprofile, dest: .zprofile }
+
+    # Menggabung ke ~/.config; file lain di sana tidak dihapus
+    - name: Salin ~/.config (ghostty, karabiner, linearmouse, zed, btop, git)
+      ansible.builtin.copy:
+        src: config/
+        dest: "{{ ansible_env.HOME }}/.config/"
+        mode: preserve
+        backup: true
