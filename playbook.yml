@@ -61,53 +61,31 @@
       - ghostty
       - google-chrome
       - iina
-      - karabiner-elements
       - keka
       - keyboardcleantool
       - linearmouse
       - maccy
       - obs
       - pearcleaner
-      - rectangle
       - tailscale-app # sudah termasuk CLI; formula `tailscale` sengaja tidak dipasang (bentrok)
       - visual-studio-code
       - zed
       - zoom
       - zotero
-    # Shortcut Rectangle; mods = bitmask NSEvent (Shift 131072, Ctrl 262144, Opt 524288, Cmd 1048576).
-    # Panah pakai Ctrl+Opt+Shift (917504) karena Karabiner memetakan Cmd/Win+panah ke kombinasi itu.
-    rectangle_shortcuts:
-      - { name: leftHalf, key: 123, mods: 917504 }
-      - { name: rightHalf, key: 124, mods: 917504 }
-      - { name: maximize, key: 126, mods: 917504 }
-      - { name: restore, key: 125, mods: 917504 }
-      - { name: maximizeHeight, key: 4, mods: 917504 }
-      - { name: nextDisplay, key: 124, mods: 1441792 }
-      - { name: previousDisplay, key: 123, mods: 1441792 }
-      - { name: reflowTodo, key: 45, mods: 786432 }
-      - { name: toggleTodo, key: 11, mods: 786432 }
-    rectangle_settings:
-      - { key: allowAnyShortcut, type: bool, value: true }
-      - { key: alternateDefaultShortcuts, type: bool, value: true }
-      - { key: hideMenubarIcon, type: bool, value: false }
-      - { key: launchOnLogin, type: bool, value: true }
-      - { key: subsequentExecutionMode, type: int, value: 1 }
-      - { key: windowSnapping, type: bool, value: true }
-  handlers:
-    - name: Restart Rectangle
-      ansible.builtin.shell: osascript -e 'quit app "Rectangle"'; sleep 1; open -a Rectangle
-      changed_when: true
   tasks:
     - name: Tap Homebrew
+      tags: brew
       community.general.homebrew_tap:
         name: "{{ taps }}"
 
     - name: Pasang formula
+      tags: brew
       community.general.homebrew:
         name: "{{ formulae }}"
         state: present
 
     - name: Pasang cask
+      tags: brew
       community.general.homebrew_cask:
         name: "{{ casks }}"
         state: present
@@ -144,33 +122,12 @@
         - { src: zprofile, dest: .zprofile }
 
     # Menggabung ke ~/.config; file lain di sana tidak dihapus
-    - name: Salin ~/.config (ghostty, karabiner, linearmouse, zed, btop, git)
+    - name: Salin ~/.config (ghostty, linearmouse, zed, btop, git)
       ansible.builtin.copy:
         src: config/
         dest: "{{ ansible_env.HOME }}/.config/"
         mode: preserve
         backup: true
-
-    # osx_defaults tidak mendukung tipe dict, jadi shortcut ditulis lewat `defaults` dan dicek dulu
-    - name: Atur shortcut Rectangle
-      ansible.builtin.shell: |
-        want='{keyCode={{ item.key }};modifierFlags={{ item.mods }};}'
-        [ "$(defaults read com.knollsoft.Rectangle {{ item.name }} 2>/dev/null | tr -d ' \n')" = "$want" ] && exit 0
-        defaults write com.knollsoft.Rectangle {{ item.name }} -dict keyCode -int {{ item.key }} modifierFlags -int {{ item.mods }}
-        echo changed
-      register: rectangle_shortcut
-      changed_when: "'changed' in rectangle_shortcut.stdout"
-      loop: "{{ rectangle_shortcuts }}"
-      notify: Restart Rectangle
-
-    - name: Atur preferensi Rectangle
-      community.general.osx_defaults:
-        domain: com.knollsoft.Rectangle
-        key: "{{ item.key }}"
-        type: "{{ item.type }}"
-        value: "{{ item.value }}"
-      loop: "{{ rectangle_settings }}"
-      notify: Restart Rectangle
 
     # batt (charlie0129) butuh daemon sistem agar bisa mengatur batas charge
     - name: Pasang daemon batt
